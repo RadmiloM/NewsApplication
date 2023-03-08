@@ -1,0 +1,38 @@
+# config/packages/security.yaml
+security:
+    password_hashers:
+        App\Entity\User:
+            algorithm: plaintext
+            encode_as_base64: false
+            iterations: 1
+    enable_authenticator_manager: true
+    providers:
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: email
+
+    firewalls:
+        login:
+            pattern: ^/user/login
+            stateless: true
+            provider: app_user_provider
+            json_login:
+                check_path: /user/login
+                username_path: email
+                password_path: password
+                success_handler: lexik_jwt_authentication.handler.authentication_success
+                failure_handler: lexik_jwt_authentication.handler.authentication_failure
+
+        api:
+            pattern:   ^/api
+            stateless: true
+            jwt: ~
+
+    access_control:
+        - { path: '^/user/login', roles: PUBLIC_ACCESS}
+        - { path: ^/user/register, roles: PUBLIC_ACCESS }
+        - { path: ^/user/articles, roles: PUBLIC_ACCESS }
+        - { path: ^/user/article/[0-9], roles: PUBLIC_ACCESS }
+        - { path: ^/user/category/[0-9], roles: PUBLIC_ACCESS }
+        - { path: ^/user/categories, roles: PUBLIC_ACCESS }
