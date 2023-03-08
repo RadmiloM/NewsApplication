@@ -42,4 +42,6 @@ security:
         - { path: ^/user/edit/category/[0-9], roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/user/delete/category/[0-9], roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/user/createCategory, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/user/currentUser, roles: IS_AUTHENTICATED_FULLY }
+
 
