@@ -55,6 +55,20 @@ class UserController extends AbstractController {
        return new JsonResponse("User with email " .$data['email']. " successfully registered",Response::HTTP_CREATED);
     }
 
+    
+    /**
+     * @Route("/currentUser", name="current_user", methods={"GET"})
+     */
+
+    public function fetchCurrentUser(): Response
+    {
+        
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+
+        return new Response('Currently authenticated user is '.$user->getEmail());
+    }
+
    
 
 }
