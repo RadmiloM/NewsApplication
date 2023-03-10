@@ -19,7 +19,6 @@ use Symfony\Component\Cache\Adapter\RedisAdapter;
 class CategoryController extends AbstractController {
     
         private $categoryRepository;
-
         private $managerRegistry;
 
 
