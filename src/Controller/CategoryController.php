@@ -30,9 +30,9 @@ class CategoryController extends AbstractController {
 
         }
 
-     /**
-         * @Route("/createCategory", name="create_category", methods={"POST"})
-         */
+        /**
+        * @Route("/createCategory", name="create_category", methods={"POST"})
+        */
         public function createCategory(Request $request): JsonResponse
         {
            $data = json_decode($request->getContent(), true);
@@ -53,9 +53,9 @@ class CategoryController extends AbstractController {
                return new JsonResponse([],Response::HTTP_CREATED);
         }
 
-            /**
-             * @Route("/category/{id}", name="find_one_category", methods={"GET"})
-             */
+        /**
+        * @Route("/category/{id}", name="find_one_category", methods={"GET"})
+        */
         public function findCategoryById($id): JsonResponse
         {
             $category = $this->categoryRepository->findOneBy(['id' => $id]);
@@ -73,9 +73,9 @@ class CategoryController extends AbstractController {
             return new JsonResponse($data,Response::HTTP_OK);
         }
 
-            /**
-             * @Route("/categories", name="find_all_categories", methods={"GET"})
-             */
+        /**
+        * @Route("/categories", name="find_all_categories", methods={"GET"})
+        */
         public function findAllCategories(): JsonResponse {
 
         $client = RedisAdapter::createConnection("redis://localhost:6379");
@@ -107,7 +107,6 @@ class CategoryController extends AbstractController {
             
         return new JsonResponse($data, Response::HTTP_OK);
         }
-
 
         /**
         * @Route("/delete/category/{id}", name="delete_category", methods={"DELETE"})
