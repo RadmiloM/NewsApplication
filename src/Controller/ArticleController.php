@@ -11,13 +11,12 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\Cache\Adapter\RedisAdapter;
 
 
 #[Route('/user')]
 class ArticleController extends AbstractController {
-
-   
-
+    
         private $articleRepository;
         private $managerRegistry;
 
@@ -30,15 +29,28 @@ class ArticleController extends AbstractController {
         * @Route("/articles", name="find_all_articles", methods={"GET"})
         */
         public function findAllArticles(): JsonResponse
-        {
-            $articles = $this->articleRepository->findAll();
-            $data = [];
-
-            foreach ($articles as $article) {
-                $data[] = [
-                    'title' => $article->getTitle(),
-                    'content' => $article->getContent(),
-                ];
+        {   
+            $client = RedisAdapter::createConnection("redis://localhost:6379");
+            $cache = new RedisAdapter($client,"articles_items");
+            $cachedArticles = $cache->getItem("articles_items");
+            
+            if (!$cachedArticles->isHit()) {
+                $articles = $this->articleRepository->findAll();
+                $data = [];
+        
+                foreach ($articles as $article) {
+                    $data[] = [
+                        'title' => $article->getTitle(),
+                        'content' => $article->getContent(),
+                    ];
+                }
+        
+                $cachedArticles->set($data);
+                $cachedArticles->expiresAfter(\DateInterval::createFromDateString('1 minute'));
+                $cache->save($cachedArticles);
+            } else {
+                
+                $data = $cachedArticles->get();
             }
             
             return new JsonResponse($data, Response::HTTP_OK);
@@ -62,7 +74,7 @@ class ArticleController extends AbstractController {
             return new JsonResponse([],Response::HTTP_CREATED);
         }
 
-            /**
+        /**
          * @Route("/article/{id}", name="find_one_article", methods={"GET"})
          */
         public function findArticleById($id): JsonResponse
@@ -126,6 +138,6 @@ class ArticleController extends AbstractController {
 
             return new JsonResponse(Response::HTTP_OK);
 
-            }
+        }
 
 }
