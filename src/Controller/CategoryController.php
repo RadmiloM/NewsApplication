@@ -76,7 +76,8 @@ class CategoryController extends AbstractController {
         /**
         * @Route("/categories", name="find_all_categories", methods={"GET"})
         */
-        public function findAllCategories(): JsonResponse {
+        public function findAllCategories(): JsonResponse 
+        {
 
         $client = RedisAdapter::createConnection("redis://localhost:6379");
         $cache = new RedisAdapter($client,"categories_items");
