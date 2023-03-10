@@ -48,7 +48,8 @@ class ArticleController extends AbstractController {
                 $cachedArticles->set($data);
                 $cachedArticles->expiresAfter(\DateInterval::createFromDateString('1 minute'));
                 $cache->save($cachedArticles);
-            } else {
+            } 
+            else {
                 
                 $data = $cachedArticles->get();
             }
@@ -81,7 +82,8 @@ class ArticleController extends AbstractController {
         {
             $article = $this->articleRepository->findOneBy(['id' => $id]);
 
-            if(!$article){
+            if(!$article) {
+
                 return new JsonResponse("article with id: " .$id. " does not exists");
             }
 
@@ -103,7 +105,6 @@ class ArticleController extends AbstractController {
             if(!$article) {
 
                 return new JsonResponse("article with id: " .$id. " does not exists");
-
             }
 
             $data = json_decode($request->getContent(), true);
@@ -137,7 +138,6 @@ class ArticleController extends AbstractController {
             $entityManager->flush();
 
             return new JsonResponse(Response::HTTP_OK);
-
         }
 
 }
