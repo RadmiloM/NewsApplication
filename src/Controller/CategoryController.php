@@ -83,7 +83,7 @@ class CategoryController extends AbstractController {
         $cache = new RedisAdapter($client,"categories_items");
         $cachedCategories = $cache->getItem("categories_items");
 
-        if(!$cachedCategories->isHit()){
+        if (!$cachedCategories->isHit()) {
             $categories = $this->categoryRepository->findAll();
 
             $data = [];
@@ -100,8 +100,9 @@ class CategoryController extends AbstractController {
             $cachedCategories->set($data);
             $cachedCategories->expiresAfter(\DateInterval::createFromDateString('1 minute'));
             $cache->save($cachedCategories);
-        }   
-          else{
+        }
+
+        else {
                 
              $data= $cachedCategories->get();
         }
@@ -117,8 +118,9 @@ class CategoryController extends AbstractController {
             $category = $this->categoryRepository->findOneBy(['id' => $id]);
             
             if(!$category) {
-                        return new JsonResponse("category with id: " .$id. " does not exists");
-                    }
+
+                return new JsonResponse("category with id: " .$id. " does not exists");
+            }
 
             $entityManager = $this->managerRegistry->getManager();
             $entityManager->remove($category);
@@ -134,9 +136,11 @@ class CategoryController extends AbstractController {
         public function updateCategory($id, Request $request): JsonResponse
         {
             $category = $this->categoryRepository->findOneBy(['id' => $id]);
+
             if(!$category) {
-                            return new JsonResponse("category with id: " .$id. " does not exists");
-                        }
+
+                return new JsonResponse("category with id: " .$id. " does not exists");        
+            }
 
             $data = json_decode($request->getContent(), true);
 
