@@ -11,20 +11,24 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Doctrine\Persistence\ManagerRegistry;
+
 
 #[Route('/user')]
 class UserController extends AbstractController {
 
-    private $userRepository;
+    private $managerRegistry;
 
-    public function __construct(UserRepository $userRepository){
-        $this->userRepository = $userRepository;
+    public function __construct(ManagerRegistry $managerRegistry){
+        $this->managerRegistry = $managerRegistry;
+
     }
 
     /**
      * @Route("/register", name="register_user", methods={"POST"})
      */
-    public function createUser(Request $request,UserPasswordHasherInterface $passwordHasher): JsonResponse {
+    public function createUser(Request $request,UserPasswordHasherInterface $passwordHasher): JsonResponse 
+    {
        $data = json_decode($request->getContent(), true);
 
        $user = new User();
@@ -45,7 +49,7 @@ class UserController extends AbstractController {
        $category->setArticle($article);
        $user->setCategory($category);
 
-       $entityManager = $this->getDoctrine()->getManager();
+       $entityManager = $this->managerRegistry->getManager();
        $entityManager->persist($category);
        $entityManager->persist($article);
        $entityManager->persist($user);
@@ -59,7 +63,6 @@ class UserController extends AbstractController {
     /**
      * @Route("/currentUser", name="current_user", methods={"GET"})
      */
-
     public function fetchCurrentUser(): Response
     {
         
