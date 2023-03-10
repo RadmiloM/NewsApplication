@@ -10,6 +10,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Cache\Adapter\RedisAdapter;
+
 
 class CategoryControllerTest extends TestCase {
     public function testingWhenCategoryWithProvidedIdIsNotPresentInDatabase(): void {
@@ -65,48 +67,59 @@ class CategoryControllerTest extends TestCase {
 
     public function testFindAllCategories(): void {
 
-    $firstCategory = new Category();
-    $firstCategory->setName('Movies');
-
-    $firstArticle = new Article();
-    $firstArticle->setTitle('Spidermen');
-    $firstArticle->setContent('Spidermen super hero');
-    $firstCategory->setArticle($firstArticle);
-
-    $secondCategory = new Category();
-    $secondCategory->setName('Books');
-
-    $secondArticle = new Article();
-    $secondArticle->setTitle('Harry Potter');
-    $secondArticle->setContent('Harry Potter and order of Phoenix');
-    $secondCategory->setArticle($secondArticle);
-
-    $categoryRepositoryMock = $this->createMock(CategoryRepository::class);
-    $categoryRepositoryMock->expects($this->once())
-        ->method('findAll')
-        ->willReturn([$firstCategory, $secondCategory]);
-
-    $managerRegistryMock = $this->createMock(ManagerRegistry::class);
-    $categoryController = new CategoryController($categoryRepositoryMock, $managerRegistryMock);
-
-    $request = new Request([], [], [], [], [], [], []);
-    $response = $categoryController->findAllCategories($request);
-
-    $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
-
-    $this->assertEquals(json_encode([
-        [
-            'name' => 'Movies',
-            'title' => 'Spidermen',
-            'content' => 'Spidermen super hero',
-        ],
-        [
-            'name' => 'Books',
-            'title' => 'Harry Potter',
-            'content' => 'Harry Potter and order of Phoenix',
-        ],
-    ]), $response->getContent());
-
+        $firstCategory = new Category();
+        $firstCategory->setName('Movies');
+    
+        $firstArticle = new Article();
+        $firstArticle->setTitle('Spidermen');
+        $firstArticle->setContent('Spidermen super hero');
+        $firstCategory->setArticle($firstArticle);
+    
+        $secondCategory = new Category();
+        $secondCategory->setName('Books');
+    
+        $secondArticle = new Article();
+        $secondArticle->setTitle('Harry Potter');
+        $secondArticle->setContent('Harry Potter and order of Phoenix');
+        $secondCategory->setArticle($secondArticle);
+    
+        $categoryRepositoryMock = $this->createMock(CategoryRepository::class);
+        $categoryRepositoryMock->expects($this->once())
+            ->method('findAll')
+            ->willReturn([$firstCategory, $secondCategory]);
+    
+        $managerRegistryMock = $this->createMock(ManagerRegistry::class);
+    
+        $client = RedisAdapter::createConnection("redis://localhost:6379");
+        $cache = new RedisAdapter($client,"categories_items");
+        $cachedCategories = $cache->getItem("categories_items");
+    
+        $categoryController = new CategoryController($categoryRepositoryMock, $managerRegistryMock, $cache);
+    
+        if (!$cachedCategories->isHit()) {
+            $response = $categoryController->findAllCategories();
+            $data = json_decode($response->getContent(), true);
+            $cachedCategories->set($data);
+            $cachedCategories->expiresAfter(\DateInterval::createFromDateString('1 minute'));
+            $cache->save($cachedCategories);
+        } else {
+            $data = $cachedCategories->get();
+        }
+    
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+    
+        $this->assertEquals(json_encode([
+            [
+                'name' => 'Movies',
+                'title' => 'Spidermen',
+                'content' => 'Spidermen super hero',
+            ],
+            [
+                'name' => 'Books',
+                'title' => 'Harry Potter',
+                'content' => 'Harry Potter and order of Phoenix',
+            ],
+        ]), $response->getContent());
     }
 
     public function testCreateCategory(): void {
