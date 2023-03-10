@@ -9,9 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\ORM\EntityManagerInterface;
-
-
-
+use Symfony\Component\Cache\Adapter\RedisAdapter;
 
 
 
@@ -66,44 +64,48 @@ class ArticleControllerTest extends TestCase {
     }
 
     public function testFindingAllArticles(): void {
-
-    $firstArticle = new Article();
-    $firstArticle->setTitle("Football");
-    $firstArticle->setContent("Tomorrow we are expecting new game");
-
-    $secondArticle = new Article();
-    $secondArticle->setTitle("Basketball");
-    $secondArticle->setContent("We are playing basketball today");
-
-    $thirdArticle = new Article();
-    $thirdArticle->setTitle("Programming");
-    $thirdArticle->setContent("Symfony is great framework");
-
-    $articleRepositoryMock = $this->createMock(ArticleRepository::class);
-    $managerRegistryMock = $this->createMock(ManagerRegistry::class);
-
+        $firstArticle = new Article();
+        $firstArticle->setTitle("Football");
+        $firstArticle->setContent("Tomorrow we are expecting new game");
     
-    $articleRepositoryMock->expects($this->once())
-    ->method('findAll')
-    ->willReturn([$firstArticle, $secondArticle,$thirdArticle]);
-
-    $articleController = new ArticleController($articleRepositoryMock,$managerRegistryMock);
-
-    $response = $articleController->findAllArticles();
-
-    $data = json_decode($response->getContent(), true);
-
-    $this->assertInstanceOf(JsonResponse::class, $response);
-
-    $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
-    $this->assertEquals(3, count($data));
-    $this->assertEquals("Football", $data[0]['title']);
-    $this->assertEquals("Tomorrow we are expecting new game", $data[0]['content']);
-    $this->assertEquals("Basketball", $data[1]['title']);
-    $this->assertEquals("We are playing basketball today", $data[1]['content']);
-    $this->assertEquals("Programming", $data[2]['title']);
-    $this->assertEquals("Symfony is great framework", $data[2]['content']);
-
+        $secondArticle = new Article();
+        $secondArticle->setTitle("Basketball");
+        $secondArticle->setContent("We are playing basketball today");
+    
+        $thirdArticle = new Article();
+        $thirdArticle->setTitle("Programming");
+        $thirdArticle->setContent("Symfony is great framework");
+    
+        $articleRepositoryMock = $this->createMock(ArticleRepository::class);
+        $managerRegistryMock = $this->createMock(ManagerRegistry::class);
+    
+        $articleRepositoryMock->expects($this->once())
+            ->method('findAll')
+            ->willReturn([$firstArticle, $secondArticle, $thirdArticle]);
+    
+        $articleController = new ArticleController($articleRepositoryMock, $managerRegistryMock);
+    
+        $client = RedisAdapter::createConnection('redis://localhost:6379');
+        $cache = new RedisAdapter($client);
+        $cachedArticles = $cache->getItem('articles_items');
+        $this->assertFalse($cachedArticles->isHit());
+    
+        $response = $articleController->findAllArticles();
+        $data = json_decode($response->getContent(), true);
+    
+        $cachedArticles->set($data);
+        $cachedArticles->expiresAfter(\DateInterval::createFromDateString('1 minute'));
+        $cache->save($cachedArticles);
+    
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+        $this->assertEquals(3, count($data));
+        $this->assertEquals("Football", $data[0]['title']);
+        $this->assertEquals("Tomorrow we are expecting new game", $data[0]['content']);
+        $this->assertEquals("Basketball", $data[1]['title']);
+        $this->assertEquals("We are playing basketball today", $data[1]['content']);
+        $this->assertEquals("Programming", $data[2]['title']);
+        $this->assertEquals("Symfony is great framework", $data[2]['content']);
     }
 
     public function testCreatingNewArticle(): void {
