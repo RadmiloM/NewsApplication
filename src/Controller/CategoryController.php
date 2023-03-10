@@ -11,6 +11,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\Cache\Adapter\RedisAdapter;
+
 
 
 #[Route('/user')]
@@ -74,19 +76,33 @@ class CategoryController extends AbstractController {
             /**
              * @Route("/categories", name="find_all_categories", methods={"GET"})
              */
-        public function findAllCategories(): JsonResponse 
-        {
-        $categories = $this->categoryRepository->findAll();
+        public function findAllCategories(): JsonResponse {
 
-        $data = [];
+        $client = RedisAdapter::createConnection("redis://localhost:6379");
+        $cache = new RedisAdapter($client,"categories_items");
+        $cachedCategories = $cache->getItem("categories_items");
 
-        foreach ($categories as $category) {
+        if(!$cachedCategories->isHit()){
+            $categories = $this->categoryRepository->findAll();
 
-            $data[] = [
-                'name' => $category->getName(),
-                'title'=> $category->getArticle()->getTitle(),
-                'content'=>$category->getArticle()->getContent()
-            ];
+            $data = [];
+
+            foreach ($categories as $category) {
+
+                $data[] = [
+                    'name' => $category->getName(),
+                    'title'=> $category->getArticle()->getTitle(),
+                    'content'=>$category->getArticle()->getContent()
+                ];
+            }
+
+            $cachedCategories->set($data);
+            $cachedCategories->expiresAfter(\DateInterval::createFromDateString('1 minute'));
+            $cache->save($cachedCategories);
+        }   
+          else{
+                
+             $data= $cachedCategories->get();
         }
             
         return new JsonResponse($data, Response::HTTP_OK);
