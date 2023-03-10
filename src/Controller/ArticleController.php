@@ -123,7 +123,7 @@ class ArticleController extends AbstractController {
         * @Route("/delete/article/{id}", name="delete_article", methods={"DELETE"})
         */
         public function deleteArticle($id): JsonResponse
-            {
+        {
 
             $article = $this->articleRepository->findOneBy(['id' => $id]);
 
